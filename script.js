@@ -17,7 +17,7 @@ const account1 = {
 
   movementsDates: [
     '2019-11-18T21:31:17.178Z',
-    '2019-12-23T07:42:02.383Z',
+    '2022-02-09T07:42:02.383Z',
     '2020-01-28T09:15:04.904Z',
     '2020-04-01T10:17:24.185Z',
     '2020-05-08T14:11:59.604Z',
@@ -81,20 +81,33 @@ const inputClosePin = document.querySelector('.form__input--pin');
 /////////////////////////////////////////////////
 // Functions
 
-const displayMovements = function (movements, sort = false) {
+
+const displayMovements = function (acc, sort = false) {
   containerMovements.innerHTML = '';
 
-  const movs = sort ? movements.slice().sort((a, b) => a - b) : movements;
+  const movs = sort
+    ? acc.movements.slice().sort((a, b) => a - b)
+    : acc.movements;
 
   movs.forEach(function (mov, i) {
     const type = mov > 0 ? 'deposit' : 'withdrawal';
+
+   
+    const date = new Date(acc.movementsDates[i]);
+
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+
+    const displayDate = `${day}/${month}/${year}`;
 
     const html = `
       <div class="movements__row">
         <div class="movements__type movements__type--${type}">${
       i + 1
     } ${type}</div>
-        <div class="movements__value">${mov}€</div>
+       <div class="movements__date">${displayDate}</div>
+      <div class="movements__value">${mov.toFixed(2)}€</div>
       </div>
     `;
 
@@ -142,7 +155,7 @@ createUsernames(accounts);
 
 const updateUI = function (acc) {
   // Display movements
-  displayMovements(acc.movements);
+  displayMovements(acc);
 
   // Display balance
   calcDisplayBalance(acc);
@@ -150,6 +163,11 @@ const updateUI = function (acc) {
   // Display summary
   calcDisplaySummary(acc);
 };
+
+///////////////////////////////////////
+// Fake Login
+containerApp.style.opacity = 100;
+updateUI(account1);
 
 ///////////////////////////////////////
 // Event handlers
@@ -162,7 +180,6 @@ btnLogin.addEventListener('click', function (e) {
   currentAccount = accounts.find(
     acc => acc.username === inputLoginUsername.value
   );
-  console.log(currentAccount);
 
   if (currentAccount?.pin === Number(inputLoginPin.value)) {
     // Display UI and message
@@ -174,6 +191,16 @@ btnLogin.addEventListener('click', function (e) {
     // Clear input fields
     inputLoginUsername.value = inputLoginPin.value = '';
     inputLoginPin.blur();
+
+    // Displaying Date
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const hour = `${date.getHours()}`.padStart(2, '0');
+    const minutes = `${date.getMinutes()}`.padStart(2, '0');
+
+    labelDate.textContent = `${day}/${month}/${year}, ${hour}:${minutes}`;
 
     // Update UI
     updateUI(currentAccount);
@@ -247,4 +274,3 @@ btnSort.addEventListener('click', function (e) {
   displayMovements(currentAccount.movements, !sorted);
   sorted = !sorted;
 });
-
