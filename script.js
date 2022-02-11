@@ -80,24 +80,44 @@ const inputClosePin = document.querySelector('.form__input--pin');
 
 /////////////////////////////////////////////////
 // Functions
+const startLogoutTimer = function () {
+  let time = 20;
 
-//   labelBalance.textContent = new Intl.NumberFormat(acc.locale, options).format(acc.balance);
+  const tick = function () {
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    const sec = String(time % 60).padStart(2, 0);
+
+    labelTimer.textContent = `${min}:${sec}`;
+    if (time === 0) {
+      clearInterval(timer);
+      labelWelcome.textContent = `Log in to get started`;
+      containerApp.style.opacity = 0;
+    }
+    time--;
+  };
+
+  tick();
+  const timer = setInterval(tick, 1000);
+
+  return timer;
+};
 
 const formatNumber = function (value, locale, currency) {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: currency
+    currency: currency,
   }).format(value);
-}
+};
 
 const formatMovDate = function (date, locale) {
-  const calcPassedDay = (date1, date2) => Math.round(Math.abs((date1 - date2) / (1000 * 60 * 60 * 24)));
+  const calcPassedDay = (date1, date2) =>
+    Math.round(Math.abs((date1 - date2) / (1000 * 60 * 60 * 24)));
   const currentDate = new Date();
   const passedDays = calcPassedDay(currentDate, date);
 
-  if(passedDays === 0) return 'Today';
+  if (passedDays === 0) return 'Today';
   if (passedDays === 1) return 'Yesterday';
-  if (passedDays <= 7) return `${passedDays} days Ago` 
+  if (passedDays <= 7) return `${passedDays} days Ago`;
 
   // const year = date.getFullYear();
   // const month = `${date.getMonth()}`.padStart(2, '0');
@@ -106,7 +126,7 @@ const formatMovDate = function (date, locale) {
   // return `${day}/${month}/${year}`
 
   return new Intl.DateTimeFormat(locale).format(date);
-}
+};
 
 const displayMovements = function (acc, sort = false) {
   containerMovements.innerHTML = '';
@@ -144,9 +164,10 @@ const calcDisplayBalance = function (acc) {
   const options = {
     style: 'currency',
     currency: acc.currency,
-
-  }
-  labelBalance.textContent = new Intl.NumberFormat(acc.locale, options).format(acc.balance);
+  };
+  labelBalance.textContent = new Intl.NumberFormat(acc.locale, options).format(
+    acc.balance
+  );
 };
 
 const calcDisplaySummary = function (acc) {
@@ -160,7 +181,11 @@ const calcDisplaySummary = function (acc) {
     .filter(mov => mov < 0)
     .reduce((acc, mov) => acc + mov, 0);
   // labelSumOut.textContent = `${Math.abs(out)}€`;
-  labelSumOut.textContent = formatNumber(Math.abs(out), acc.locale, acc.currency);
+  labelSumOut.textContent = formatNumber(
+    Math.abs(out),
+    acc.locale,
+    acc.currency
+  );
 
   const interest = acc.movements
     .filter(mov => mov > 0)
@@ -170,7 +195,11 @@ const calcDisplaySummary = function (acc) {
     })
     .reduce((acc, int) => acc + int, 0);
   // labelSumInterest.textContent = `${interest}€`;
-  labelSumInterest.textContent = formatNumber(interest, acc.locale, acc.currency);
+  labelSumInterest.textContent = formatNumber(
+    interest,
+    acc.locale,
+    acc.currency
+  );
 };
 
 const createUsernames = function (accs) {
@@ -196,13 +225,8 @@ const updateUI = function (acc) {
 };
 
 ///////////////////////////////////////
-// Fake Login
-containerApp.style.opacity = 100;
-updateUI(account1);
-
-///////////////////////////////////////
 // Event handlers
-let currentAccount;
+let currentAccount, timer;
 
 btnLogin.addEventListener('click', function (e) {
   // Prevent form from submitting
@@ -240,10 +264,17 @@ btnLogin.addEventListener('click', function (e) {
       day: 'numeric',
       hour: 'numeric',
       minute: 'numeric',
-    }
+    };
 
-    labelDate.textContent = new Intl.DateTimeFormat(currentAccount.locale, options).format(date);
-    
+    labelDate.textContent = new Intl.DateTimeFormat(
+      currentAccount.locale,
+      options
+    ).format(date);
+
+    // adding LogoutTime
+    if (timer) clearInterval(timer);
+    timer = startLogoutTimer();
+
     // Update UI
     updateUI(currentAccount);
   }
@@ -273,25 +304,35 @@ btnTransfer.addEventListener('click', function (e) {
 
     // Update UI
     updateUI(currentAccount);
+
+    //reset timer
+    clearInterval(timer);
+    timer = startLogoutTimer();
   }
 });
 
 btnLoan.addEventListener('click', function (e) {
   e.preventDefault();
 
-  const amount = Number(inputLoanAmount.value);
+  const amount = Math.floor(inputLoanAmount.value);
 
   if (amount > 0 && currentAccount.movements.some(mov => mov >= amount * 0.1)) {
-    // Add movement
-    currentAccount.movements.push(amount);
+    setTimeout(function () {
+      // Add movement
+      currentAccount.movements.push(amount);
+      // Add loan Date
+      currentAccount.movementsDates.push(new Date().toISOString());
 
-    //adding Dates
-    currentAccount.movementsDates.push(new Date().toISOString());
-
-    // Update UI
-    updateUI(currentAccount);
+      // Update UI
+      updateUI(currentAccount);
+    }, 2500);
   }
   inputLoanAmount.value = '';
+
+  // Reset the Timer
+  clearInterval(timer);
+  // Start Timer
+  timer = startLogoutTimer();
 });
 
 btnClose.addEventListener('click', function (e) {
@@ -323,3 +364,5 @@ btnSort.addEventListener('click', function (e) {
   displayMovements(currentAccount.movements, !sorted);
   sorted = !sorted;
 });
+
+////////////////////////////////////////////////////////
